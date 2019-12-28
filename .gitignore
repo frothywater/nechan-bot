@@ -1,0 +1,9 @@
+lib
+data
+config
+test
+node_modules
+.VSCodeCounter
+.vscode
+tsconfig.test.json
+package-lock.json
