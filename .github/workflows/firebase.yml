@@ -22,8 +22,6 @@ jobs:
           echo $SERVICE_ACCOUNT_KEY > src/key/serviceAccountKey.json
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
-      - name: Build
-        run: npm run build
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:
