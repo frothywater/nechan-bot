@@ -2,10 +2,10 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import { Telegraf } from "telegraf"
 import { Message } from "typegram"
-import serviceAccount from "../key/serviceAccountKey.json"
 import Admin from "./admin"
 import Database from "./database"
 import fileFuncRelations from "./fileTable"
+import serviceAccount from "./key/serviceAccountKey.json"
 import {
     MyContext,
     MySupportedFileType,
