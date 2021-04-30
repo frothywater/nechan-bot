@@ -16,6 +16,10 @@ jobs:
         uses: actions/checkout@main
       - name: Install Dependencies
         run: npm install
+      - name: Write Secret
+        run: echo $SERVICE_ACCOUNT_KEY > src/key/serviceAccountKey.json
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
       - name: Build
         run: npm run build
       - name: Archive Production Artifact
