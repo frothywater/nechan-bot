@@ -2,6 +2,10 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import { Telegraf } from "telegraf"
 import { Message } from "typegram"
+// ===================================================================
+// Initialize.
+// ===================================================================
+import serviceAccount from "../key/serviceAccountKey.json"
 import Admin from "./admin"
 import Database from "./database"
 import fileFuncRelations from "./fileTable"
@@ -13,13 +17,8 @@ import {
 } from "./typings"
 import * as utils from "./utils"
 
-// ===================================================================
-// Initialize.
-// ===================================================================
-
-const serviceAccount = require("../key/serviceAccountKey.json")
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
     databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
 })
 
@@ -44,12 +43,12 @@ bot.use(async (ctx, next) => {
 
 // If the update is from one of admin, add this to ctx.
 bot.use(async (ctx: MyContext, next) => {
-    if (ctx.chat!.id > 0)
-        ctx.admin = admins.find((admin) => admin.id === ctx.from!.id)
+    if (ctx.chat?.type === "private")
+        ctx.admin = admins.find((admin) => admin.id === ctx.from?.id)
     await next()
 })
 
-bot.catch((error: any) => {
+bot.catch((error: unknown) => {
     admins.forEach((admin) => admin.sendMessageToAdmin(utils.errorLog(error)))
 })
 
@@ -117,7 +116,7 @@ async function handleText(ctx: MyContext) {
 
 async function handleFile(ctx: MyContext, type: MySupportedFileType) {
     const { sendFunc, getFileIDFunc } = fileFuncRelations(ctx.telegram)[type]
-    const fileID = getFileIDFunc(ctx)!
+    const fileID = getFileIDFunc(ctx)
 
     if (ctx.admin) {
         await ctx.admin.sendFileToRecipients(fileID, sendFunc)
@@ -128,6 +127,7 @@ async function handleFile(ctx: MyContext, type: MySupportedFileType) {
         await Promise.allSettled(
             admins.map((admin) => {
                 admin.sendMessageToAdmin(
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                     utils.userComingFileLog(ctx.message!, type)
                 )
                 admin.sendFileToAdmin(fileID, sendFunc)
@@ -136,12 +136,13 @@ async function handleFile(ctx: MyContext, type: MySupportedFileType) {
 }
 
 async function updateDatabaseFromMessage(message: Message) {
-    const { from, chat } = message
+    const { from: fromUser, chat } = message
     const name = await database.getNameById(chat.id)
     if (!name) {
         let user: MyUser
         if (chat.type === "private")
-            user = { id: from!.id, name: utils.fullName(from!) }
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            user = { id: fromUser!.id, name: utils.fullName(fromUser!) }
         else user = { id: chat.id, name: chat.title }
         await database.addUser(user)
     }

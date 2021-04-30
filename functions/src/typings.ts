@@ -15,8 +15,7 @@ export interface MyUser {
 
 export type TelegramSendFunc = (
     chatId: number | string,
-    file: string | InputFile,
-    extra?: any
+    file: string | InputFile
 ) => Promise<Message>
 
 export type MySupportedFileType = (
@@ -38,7 +37,7 @@ export const supportedFileTypes: MySupportedFileType[] = [
 ]
 
 export interface FileFuncRelation {
-    getFileIDFunc: (ctx: MyContext) => string | undefined
+    getFileIDFunc: (ctx: MyContext) => string
     sendFunc: TelegramSendFunc
 }
 

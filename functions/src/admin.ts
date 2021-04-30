@@ -12,15 +12,18 @@ export default class Admin {
         this.telegram = telegram
     }
 
-    async sendMessageToAdmin(text: string) {
+    async sendMessageToAdmin(text: string): Promise<void> {
         await this.sendMessageWithMarkdown(this.id, text)
     }
 
-    async sendFileToAdmin(fileId: string, sendFunc: TelegramSendFunc) {
+    async sendFileToAdmin(
+        fileId: string,
+        sendFunc: TelegramSendFunc
+    ): Promise<void> {
         await sendFunc(this.id, fileId)
     }
 
-    async sendMessageToRecipients(text: string) {
+    async sendMessageToRecipients(text: string): Promise<void> {
         await Promise.allSettled(
             this.recipients.map((recipient) =>
                 this.sendMessageWithMarkdown(recipient.id, text)
@@ -28,24 +31,31 @@ export default class Admin {
         )
     }
 
-    async sendFileToRecipients(fileId: string, sendFunc: TelegramSendFunc) {
+    async sendFileToRecipients(
+        fileId: string,
+        sendFunc: TelegramSendFunc
+    ): Promise<void> {
         await Promise.allSettled(
             this.recipients.map((recipient) => sendFunc(recipient.id, fileId))
         )
     }
 
-    async setRecipientsByNames(names: string[], users: MyUser[]) {
+    async setRecipientsByNames(
+        names: string[],
+        users: MyUser[]
+    ): Promise<void> {
         const userNames = users.map((user) => user.name)
         const results = await Promise.all(
             names.map((name) => fuzzySearch(name, userNames))
         )
         const foundUsers = results
             .filter((result) => !!result)
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             .map((name) => users.find((user) => user.name === name)!)
         this.setRecipients(foundUsers)
     }
 
-    setRecipients(users: MyUser[]) {
+    setRecipients(users: MyUser[]): void {
         this.recipients = users
     }
 

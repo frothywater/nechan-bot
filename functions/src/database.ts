@@ -9,7 +9,7 @@ export default class Database {
 
     async getUsers(): Promise<MyUser[]> {
         const snapshot = await this.users.get()
-        let result: MyUser[] = []
+        const result: MyUser[] = []
 
         snapshot.forEach((doc) =>
             result.push({
@@ -21,7 +21,7 @@ export default class Database {
         return result
     }
 
-    async addUser(user: MyUser) {
+    async addUser(user: MyUser): Promise<void> {
         await this.users.doc(user.name).set(user)
     }
 

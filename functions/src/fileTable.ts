@@ -13,7 +13,8 @@ export default function fileFuncRelationTable(
         },
         photo: {
             getFileIDFunc: (ctx) =>
-                (ctx.message as Message.PhotoMessage).photo.pop()?.file_id,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                (ctx.message as Message.PhotoMessage).photo.pop()!.file_id,
             sendFunc: telegram.sendPhoto,
         },
         audio: {

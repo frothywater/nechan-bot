@@ -24,15 +24,17 @@ export function currentRecipientsLog(users: MyUser[]): string {
     return `✅ _Current recipients:_\n *${usersToString(users)}*`
 }
 
-export function errorLog(error: any): string {
+export function errorLog(error: unknown): string {
     return `⚠ _Error: ${error}_`
 }
 
 export function userComingTextLog(message: Message.TextMessage): string {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return `*${fullName(message.from!)}:*\n${message.text}`
 }
 
 export function userComingFileLog(message: Message, fileType: string): string {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return `*${fullName(message.from!)}* sent _${fileType}_:`
 }
 
