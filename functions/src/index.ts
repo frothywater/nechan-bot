@@ -1,6 +1,5 @@
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
-import * as allSettled from "promise.allsettled"
 import Telegraf, { Telegram } from "telegraf"
 import { Message } from "telegraf/typings/telegram-types"
 import Admin from "./admin"
@@ -96,7 +95,7 @@ async function handleText(ctx: MyContext, next: any) {
             utils.sentTextLog(ctx.admin.recipients, text)
         )
     } else if (ctx.chat!.id > 0)
-        await allSettled(
+        await Promise.allSettled(
             admins.map((admin) =>
                 admin.sendMessage(utils.userComingTextLog(ctx.message!))
             )
@@ -114,7 +113,7 @@ async function handleFile(ctx: MyContext) {
         await ctx.admin.sendFileToRecipients(fileId(ctx)!, sendFunc)
         await ctx.admin.sendMessage(utils.sentFileLog(ctx.admin.recipients))
     } else if (ctx.chat!.id > 0)
-        await allSettled(
+        await Promise.allSettled(
             admins.map((admin) => {
                 admin.sendMessage(
                     utils.userComingFileLog(ctx.message!, fileType)

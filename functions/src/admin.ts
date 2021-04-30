@@ -1,4 +1,3 @@
-import * as allSettled from "promise.allsettled"
 import { Telegram } from "telegraf"
 import { MyUser, SendFunction } from "./typings"
 import * as utils from "./utils"
@@ -23,14 +22,14 @@ export default class Admin {
 
     async sendMessageToRecipients(text: string) {
         const { recipients, _sendMessage } = this
-        await allSettled(
+        await Promise.allSettled(
             recipients.map((recipient) => _sendMessage(recipient.id, text))
         )
     }
 
     async sendFileToRecipients(fileId: string, sendFunc: SendFunction) {
         const { recipients, telegram } = this
-        await allSettled(
+        await Promise.allSettled(
             recipients.map((recipient) =>
                 sendFunc.call(telegram, recipient.id, fileId)
             )
