@@ -2,9 +2,6 @@ import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
 import { Telegraf } from "telegraf"
 import { Message } from "typegram"
-// ===================================================================
-// Initialize.
-// ===================================================================
 import serviceAccount from "../key/serviceAccountKey.json"
 import Admin from "./admin"
 import Database from "./database"
@@ -16,6 +13,10 @@ import {
     supportedFileTypes,
 } from "./typings"
 import * as utils from "./utils"
+
+// ===================================================================
+// Initialize.
+// ===================================================================
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
