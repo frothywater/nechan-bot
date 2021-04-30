@@ -22,4 +22,8 @@ module.exports = {
     "/lib/**/*", // Ignore built files.
   ],
   plugins: ["@typescript-eslint", "import"],
+  rules: {
+    "require-jsdoc": "off",
+    camelcase: "off",
+  },
 };
