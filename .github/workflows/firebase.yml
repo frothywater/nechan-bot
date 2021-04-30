@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: lib
-          path: lib
+          path: functions/lib
   deploy:
     name: Deploy
     needs: build
@@ -40,7 +40,6 @@ jobs:
         uses: actions/download-artifact@main
         with:
           name: lib
-          path: lib
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:
