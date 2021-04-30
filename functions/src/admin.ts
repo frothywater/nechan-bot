@@ -20,7 +20,8 @@ export default class Admin {
         fileId: string,
         sendFunc: TelegramSendFunc
     ): Promise<void> {
-        await sendFunc(this.id, fileId)
+        // Important! `sendFunc()` needs to be bound with `this.telegram`
+        await sendFunc.call(this.telegram, this.id, fileId)
     }
 
     async sendMessageToRecipients(text: string): Promise<void> {
@@ -36,7 +37,10 @@ export default class Admin {
         sendFunc: TelegramSendFunc
     ): Promise<void> {
         await Promise.allSettled(
-            this.recipients.map((recipient) => sendFunc(recipient.id, fileId))
+            this.recipients.map((recipient) =>
+                // Important! `sendFunc()` needs to be bound with `this.telegram`
+                sendFunc.call(this.telegram, recipient.id, fileId)
+            )
         )
     }
 
