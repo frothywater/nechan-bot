@@ -1,30 +1,39 @@
 import { Telegram } from "telegraf"
-import { FileRelations, MyContext } from "./typings"
+import { Message } from "typegram"
+import { FileFuncRelationTable } from "./typings"
 
-export default function fileTable(telegram: Telegram): FileRelations {
+export default function fileFuncRelationTable(
+    telegram: Telegram
+): FileFuncRelationTable {
     return {
         sticker: {
-            fileId: (ctx: MyContext) => ctx.message?.sticker?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.StickerMessage).sticker.file_id,
             sendFunc: telegram.sendSticker,
         },
         photo: {
-            fileId: (ctx: MyContext) => ctx.message?.photo?.pop()?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.PhotoMessage).photo.pop()?.file_id,
             sendFunc: telegram.sendPhoto,
         },
         audio: {
-            fileId: (ctx: MyContext) => ctx.message?.audio?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.AudioMessage).audio.file_id,
             sendFunc: telegram.sendAudio,
         },
         animation: {
-            fileId: (ctx: MyContext) => ctx.message?.animation?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.AnimationMessage).animation.file_id,
             sendFunc: telegram.sendAnimation,
         },
         voice: {
-            fileId: (ctx: MyContext) => ctx.message?.voice?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.VoiceMessage).voice.file_id,
             sendFunc: telegram.sendVoice,
         },
         video: {
-            fileId: (ctx: MyContext) => ctx.message?.video?.file_id,
+            getFileIDFunc: (ctx) =>
+                (ctx.message as Message.VideoMessage).video.file_id,
             sendFunc: telegram.sendVideo,
         },
     }

@@ -1,6 +1,6 @@
 import { Telegram } from "telegraf"
-import { MyUser, SendFunction } from "./typings"
-import * as utils from "./utils"
+import { MyUser, TelegramSendFunc } from "./typings"
+import { fuzzySearch } from "./utils"
 
 export default class Admin {
     id: number
@@ -12,47 +12,44 @@ export default class Admin {
         this.telegram = telegram
     }
 
-    async sendMessage(text: string) {
-        await this._sendMessage(this.id, text)
+    async sendMessageToAdmin(text: string) {
+        await this.sendMessageWithMarkdown(this.id, text)
     }
 
-    async sendFile(fileId: string, sendFunc: SendFunction) {
-        await sendFunc.call(this.telegram, this.id, fileId)
+    async sendFileToAdmin(fileId: string, sendFunc: TelegramSendFunc) {
+        await sendFunc(this.id, fileId)
     }
 
     async sendMessageToRecipients(text: string) {
-        const { recipients, _sendMessage } = this
         await Promise.allSettled(
-            recipients.map((recipient) => _sendMessage(recipient.id, text))
+            this.recipients.map((recipient) =>
+                this.sendMessageWithMarkdown(recipient.id, text)
+            )
         )
     }
 
-    async sendFileToRecipients(fileId: string, sendFunc: SendFunction) {
-        const { recipients, telegram } = this
+    async sendFileToRecipients(fileId: string, sendFunc: TelegramSendFunc) {
         await Promise.allSettled(
-            recipients.map((recipient) =>
-                sendFunc.call(telegram, recipient.id, fileId)
-            )
+            this.recipients.map((recipient) => sendFunc(recipient.id, fileId))
         )
     }
 
     async setRecipientsByNames(names: string[], users: MyUser[]) {
         const userNames = users.map((user) => user.name)
         const results = await Promise.all(
-            names.map((name) => utils.fuzzySearch(name, userNames))
+            names.map((name) => fuzzySearch(name, userNames))
         )
-        this.recipients = results
+        const foundUsers = results
             .filter((result) => !!result)
             .map((name) => users.find((user) => user.name === name)!)
+        this.setRecipients(foundUsers)
     }
 
     setRecipients(users: MyUser[]) {
         this.recipients = users
     }
 
-    _sendMessage = (id: number, text: string) => {
-        return this.telegram.sendMessage.call(this.telegram, id, text, {
-            parse_mode: "Markdown",
-        })
+    private async sendMessageWithMarkdown(id: number, text: string) {
+        await this.telegram.sendMessage(id, text, { parse_mode: "Markdown" })
     }
 }

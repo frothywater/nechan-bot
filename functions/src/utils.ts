@@ -1,6 +1,5 @@
 import * as fuzz from "fuzzball"
 import * as _ from "lodash"
-import { MessageSubType } from "telegraf/typings/telegram-types"
 import { Message, User } from "typegram"
 import { MyUser } from "./typings"
 
@@ -29,7 +28,7 @@ export function errorLog(error: any): string {
     return `⚠ _Error: ${error}_`
 }
 
-export function userComingTextLog(message: Message): string {
+export function userComingTextLog(message: Message.TextMessage): string {
     return `*${fullName(message.from!)}:*\n${message.text}`
 }
 
@@ -44,15 +43,6 @@ export function sentTextLog(users: MyUser[], text: string): string {
 export function sentFileLog(users: MyUser[]): string {
     return `✅ _Sent file to_ *${usersToString(users)}*.`
 }
-
-export const supportedFileTypes: MessageSubType[] = [
-    "sticker",
-    "photo",
-    "audio",
-    "animation",
-    "voice",
-    "video",
-]
 
 export async function fuzzySearch(
     value: string,

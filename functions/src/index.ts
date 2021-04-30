@@ -1,14 +1,22 @@
 import * as admin from "firebase-admin"
 import * as functions from "firebase-functions"
-import Telegraf, { Telegram } from "telegraf"
-import { Message } from "telegraf/typings/telegram-types"
+import { Telegraf } from "telegraf"
+import { Message } from "typegram"
 import Admin from "./admin"
 import Database from "./database"
-import fileTable from "./fileTable"
-import { MyContext, MyUser } from "./typings"
+import fileFuncRelations from "./fileTable"
+import {
+    MyContext,
+    MySupportedFileType,
+    MyUser,
+    supportedFileTypes,
+} from "./typings"
 import * as utils from "./utils"
 
+// ===================================================================
 // Initialize.
+// ===================================================================
+
 const serviceAccount = require("../key/serviceAccountKey.json")
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -17,12 +25,11 @@ admin.initializeApp({
 
 const database = new Database(admin.firestore())
 const bot = new Telegraf(functions.config().bot.token)
-const telegram = new Telegram(functions.config().bot.token)
 
 const adminId: number[] = (functions.config().bot.admin as string)
     .split(",")
     .map((str) => parseInt(str))
-const admins = adminId.map((id) => new Admin(id, telegram))
+const admins = adminId.map((id) => new Admin(id, bot.telegram))
 
 // ===================================================================
 // Global middlewares.
@@ -31,7 +38,7 @@ const admins = adminId.map((id) => new Admin(id, telegram))
 bot.start((ctx) => ctx.reply(utils.welcomeSentence))
 
 bot.use(async (ctx, next) => {
-    await next!()
+    await next()
     if (ctx.message) await updateDatabaseFromMessage(ctx.message)
 })
 
@@ -39,11 +46,11 @@ bot.use(async (ctx, next) => {
 bot.use(async (ctx: MyContext, next) => {
     if (ctx.chat!.id > 0)
         ctx.admin = admins.find((admin) => admin.id === ctx.from!.id)
-    await next!()
+    await next()
 })
 
 bot.catch((error: any) => {
-    admins.forEach((admin) => admin.sendMessage(utils.errorLog(error)))
+    admins.forEach((admin) => admin.sendMessageToAdmin(utils.errorLog(error)))
 })
 
 // ===================================================================
@@ -51,27 +58,31 @@ bot.catch((error: any) => {
 // ===================================================================
 
 bot.command("list", async (ctx: MyContext) => {
-    await ctx.admin?.sendMessage(utils.usersLog(await database.getUsers()))
+    await ctx.admin?.sendMessageToAdmin(
+        utils.usersLog(await database.getUsers())
+    )
 })
 
 bot.command("now", async (ctx: MyContext) => {
-    await ctx.admin?.sendMessage(
+    await ctx.admin?.sendMessageToAdmin(
         utils.currentRecipientsLog(ctx.admin.recipients)
     )
 })
 
 bot.command("use", async (ctx: MyContext) => {
-    const names = utils.namesInCommand(ctx.message!.text!)
+    const names = utils.namesInCommand(
+        (ctx.message as Message.TextMessage).text
+    )
     const userNames = await database.getUsers()
     await ctx.admin?.setRecipientsByNames(names, userNames)
-    await ctx.admin?.sendMessage(
+    await ctx.admin?.sendMessageToAdmin(
         utils.currentRecipientsLog(ctx.admin.recipients)
     )
 })
 
 bot.command("all", async (ctx: MyContext) => {
     ctx.admin?.setRecipients(await database.getUsers())
-    await ctx.admin?.sendMessage(
+    await ctx.admin?.sendMessageToAdmin(
         utils.currentRecipientsLog(ctx.admin.recipients)
     )
 })
@@ -80,45 +91,51 @@ bot.command("all", async (ctx: MyContext) => {
 
 bot.on("text", handleText)
 
-bot.on(utils.supportedFileTypes, handleFile)
+// Register listener for each supported file type
+supportedFileTypes.forEach((type) =>
+    bot.on(type, (ctx) => handleFile(ctx, type))
+)
 
 exports.bot = functions.https.onRequest(async (req, res) => {
     await bot.handleUpdate(req.body, res)
     res.end()
 })
 
-async function handleText(ctx: MyContext, next: any) {
+// ===================================================================
+
+async function handleText(ctx: MyContext) {
     if (ctx.admin) {
-        const text = ctx.message!.text!
+        const text = (ctx.message as Message.TextMessage).text
         await ctx.admin.sendMessageToRecipients(text)
-        await ctx.admin.sendMessage(
+        await ctx.admin.sendMessageToAdmin(
             utils.sentTextLog(ctx.admin.recipients, text)
         )
-    } else if (ctx.chat!.id > 0)
+    } else if (ctx.chat?.type === "private")
         await Promise.allSettled(
             admins.map((admin) =>
-                admin.sendMessage(utils.userComingTextLog(ctx.message!))
+                admin.sendMessageToAdmin(
+                    utils.userComingTextLog(ctx.message as Message.TextMessage)
+                )
             )
         )
 }
 
-async function handleFile(ctx: MyContext) {
-    const fileType = utils.supportedFileTypes.find((supportedType) =>
-        ctx.updateSubTypes.find((type) => type === supportedType)
-    )
-    if (!fileType) return
-    const { sendFunc, fileId } = fileTable(telegram)[fileType]
+async function handleFile(ctx: MyContext, type: MySupportedFileType) {
+    const { sendFunc, getFileIDFunc } = fileFuncRelations(ctx.telegram)[type]
+    const fileID = getFileIDFunc(ctx)!
 
     if (ctx.admin) {
-        await ctx.admin.sendFileToRecipients(fileId(ctx)!, sendFunc)
-        await ctx.admin.sendMessage(utils.sentFileLog(ctx.admin.recipients))
-    } else if (ctx.chat!.id > 0)
+        await ctx.admin.sendFileToRecipients(fileID, sendFunc)
+        await ctx.admin.sendMessageToAdmin(
+            utils.sentFileLog(ctx.admin.recipients)
+        )
+    } else if (ctx.chat?.type === "private")
         await Promise.allSettled(
             admins.map((admin) => {
-                admin.sendMessage(
-                    utils.userComingFileLog(ctx.message!, fileType)
+                admin.sendMessageToAdmin(
+                    utils.userComingFileLog(ctx.message!, type)
                 )
-                admin.sendFile(fileId(ctx)!, sendFunc)
+                admin.sendFileToAdmin(fileID, sendFunc)
             })
         )
 }
@@ -128,16 +145,9 @@ async function updateDatabaseFromMessage(message: Message) {
     const name = await database.getNameById(chat.id)
     if (!name) {
         let user: MyUser
-        if (chat.id > 0)
-            user = {
-                id: from!.id,
-                name: utils.fullName(from!),
-            }
-        else
-            user = {
-                id: chat.id,
-                name: chat.title!,
-            }
+        if (chat.type === "private")
+            user = { id: from!.id, name: utils.fullName(from!) }
+        else user = { id: chat.id, name: chat.title }
         await database.addUser(user)
     }
 }
